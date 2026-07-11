@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprint — Question Practice Timer</title>
+<style>
+  /* ============================= TOKENS ============================= */
+  :root{
+    --bg:#F6F5F1;
+    --surface:#FFFFFF;
+    --surface-2:#FBFAF7;
+    --ink:#1B2430;
+    --ink-muted:#6B7480;
+    --accent:#D98E2B;
+    --accent-strong:#B9741C;
+    --accent-soft:rgba(217,142,43,0.14);
+    --success:#2F9E93;
+    --success-soft:rgba(47,158,147,0.14);
+    --danger:#C24444;
+    --border:rgba(27,36,48,0.10);
+    --ring-track:rgba(27,36,48,0.09);
+    --shadow:0 1px 2px rgba(27,36,48,0.04), 0 8px 24px rgba(27,36,48,0.06);
+    --shadow-lg:0 4px 12px rgba(27,36,48,0.06), 0 20px 48px rgba(27,36,48,0.10);
+    --radius:18px;
+    --radius-sm:12px;
+    --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:"SF Mono","JetBrains Mono",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
+  }
+  html[data-theme="dark"]{
+    --bg:#0F1419;
+    --surface:#171D26;
+    --surface-2:#1D2531;
+    --ink:#E8EDF2;
+    --ink-muted:#8A96A3;
+    --accent:#F2A93B;
+    --accent-strong:#FFC266;
+    --accent-soft:rgba(242,169,59,0.16);
+    --success:#4FD1C5;
+    --success-soft:rgba(79,209,197,0.14);
+    --danger:#E27070;
+    --border:rgba(232,237,242,0.09);
+    --ring-track:rgba(232,237,242,0.09);
+    --shadow:0 1px 2px rgba(0,0,0,0.24), 0 8px 24px rgba(0,0,0,0.32);
+    --shadow-lg:0 4px 16px rgba(0,0,0,0.3), 0 24px 60px rgba(0,0,0,0.45);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .45s ease, color .45s ease;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:
+      radial-gradient(600px 400px at 8% -5%, var(--accent-soft), transparent 60%),
+      radial-gradient(500px 380px at 100% 0%, var(--success-soft), transparent 55%);
+    pointer-events:none;
+    z-index:0;
+    transition:background .45s ease;
+  }
+
+  .app{
+    position:relative;
+    z-index:1;
+    max-width:1080px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+
+  /* ============================= HEADER ============================= */
+  header.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:26px;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand .mark{
+    width:10px;height:10px;border-radius:3px;
+    background:var(--accent);
+    display:inline-block;
+    transform:rotate(45deg);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .brand h1{ font-size:20px; letter-spacing:-0.01em; margin:0; font-weight:700; }
+  .brand .sub{ font-size:12.5px; color:var(--ink-muted); font-weight:500; }
+
+  .theme-toggle{
+    position:relative;
+    width:56px; height:30px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    cursor:pointer;
+    padding:3px;
+    display:flex;
+    align-items:center;
+    box-shadow:var(--shadow);
+    transition:background .3s ease;
+  }
+  .theme-toggle .knob{
+    width:22px;height:22px;
+    border-radius:50%;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    transform:translateX(0);
+    transition:transform .35s cubic-bezier(.65,-0.15,.3,1.3), background .3s ease;
+    color:var(--surface);
+  }
+  html[data-theme="dark"] .theme-toggle .knob{ transform:translateX(26px); }
+  .theme-toggle svg{ width:13px; height:13px; }
+  .theme-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* ============================= CONTROLS CARD ============================= */
+  .controls{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px 22px;
+    align-items:flex-end;
+    margin-bottom:0;
+    transition:background-color .45s ease, border-color .45s ease;
+  }
+  .field{ display:flex; flex-direction:column; gap:6px; min-width:120px; }
+  .field label{
+    font-size:11.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--ink-muted);
+  }
+  .field input[type="number"], .field select{
+    font-family:var(--font-mono);
+    font-size:16px; font-weight:600;
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    border:1.5px solid var(--border);
+    background:var(--surface-2);
+    color:var(--ink);
+    width:120px;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .field select{ font-family:var(--font-ui); font-weight:600; cursor:pointer; }
+  .field input:focus-visible, .field select:focus-visible{
+    outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .field input:disabled, .field select:disabled{ opacity:.55; cursor:not-allowed; }
+
+  /* --- test mode switch --- */
+  .field.switch-field{ min-width:auto; }
+  .mode-switch{
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer;
+    padding:9px 4px;
+  }
+  .mode-switch .track{
+    position:relative;
+    width:44px; height:26px;
+    border-radius:999px;
+    background:var(--ring-track);
+    border:1px solid var(--border);
+    transition:background .25s ease, border-color .25s ease;
+    flex:none;
+  }
+  .mode-switch .thumb{
+    position:absolute; top:2px; left:2px;
+    width:20px; height:20px; border-radius:50%;
+    background:var(--surface);
+    box-shadow:0 1px 3px rgba(0,0,0,0.25);
+    transition:transform .3s cubic-bezier(.65,-0.15,.3,1.3);
+  }
+  .mode-switch input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .mode-switch input:checked ~ .track{ background:var(--accent); border-color:var(--accent); }
+  .mode-switch input:checked ~ .track .thumb{ transform:translateX(18px); }
+  .mode-switch input:focus-visible ~ .track{ outline:2px solid var(--accent); outline-offset:2px; }
+  .mode-switch .switch-label{ font-size:13.5px; font-weight:700; color:var(--ink); user-select:none; }
+  .mode-switch input:disabled ~ .track{ opacity:.5; cursor:not-allowed; }
+
+  .btn-row{ display:flex; gap:10px; margin-left:auto; flex-wrap:wrap; }
+  button.action{
+    font-family:var(--font-ui);
+    font-size:14.5px; font-weight:700;
+    border-radius:var(--radius-sm);
+    border:1.5px solid transparent;
+    padding:11px 20px;
+    cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+  }
+  button.action:active{ transform:translateY(1px) scale(.98); }
+  button.action:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  button.action svg{ width:15px; height:15px; }
+  button.action:disabled{ opacity:.4; cursor:not-allowed; transform:none; }
+
+  .btn-start{ background:var(--accent); color:#1B1204; box-shadow:0 6px 16px var(--accent-soft); }
+  html[data-theme="dark"] .btn-start{ color:#241703; }
+  .btn-start:hover:not(:disabled){ box-shadow:0 8px 22px var(--accent-soft); }
+
+  .btn-secondary{ background:var(--surface-2); color:var(--ink); border-color:var(--border); }
+  .btn-secondary:hover:not(:disabled){ border-color:var(--accent); color:var(--accent-strong); }
+
+  .btn-reset{ background:transparent; color:var(--ink-muted); border-color:var(--border); }
+  .btn-reset:hover:not(:disabled){ border-color:var(--danger); color:var(--danger); }
+
+  /* ============================= TEST MODE PANEL ============================= */
+  .test-slide{
+    display:grid;
+    grid-template-rows:0fr;
+    opacity:0;
+    transition:grid-template-rows .45s cubic-bezier(.4,0,.2,1), opacity .35s ease, margin .45s ease;
+    margin-top:0;
+  }
+  .test-slide.open{ grid-template-rows:1fr; opacity:1; margin-top:16px; }
+  .test-slide-inner{ overflow:hidden; min-height:0; }
+
+  .test-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px 22px;
+    transition:background-color .45s ease, border-color .45s ease;
+  }
+  .test-card h2{
+    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--ink-muted); margin:0 0 12px; font-weight:800;
+  }
+
+  .test-pills{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  .test-pill{ position:relative; }
+  .test-pill input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .test-pill label{
+    display:flex; align-items:center; gap:9px;
+    padding:10px 18px;
+    border-radius:999px;
+    border:1.5px solid var(--border);
+    background:var(--surface-2);
+    font-size:14px; font-weight:700;
+    cursor:pointer;
+    transition:border-color .2s ease, background .2s ease, color .2s ease, transform .15s ease;
+    color:var(--ink-muted);
+  }
+  .test-pill label .radio-dot{
+    width:14px; height:14px; border-radius:50%;
+    border:2px solid var(--ink-muted);
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:border-color .2s ease;
+  }
+  .test-pill label .radio-dot::after{
+    content:""; width:7px; height:7px; border-radius:50%;
+    background:var(--accent); transform:scale(0);
+    transition:transform .2s cubic-bezier(.65,-0.15,.3,1.3);
+  }
+  .test-pill input:checked ~ label{ border-color:var(--accent); background:var(--accent-soft); color:var(--ink); }
+  .test-pill input:checked ~ label .radio-dot{ border-color:var(--accent); }
+  .test-pill input:checked ~ label .radio-dot::after{ transform:scale(1); }
+  .test-pill input:focus-visible ~ label{ outline:2px solid var(--accent); outline-offset:2px; }
+  .test-pill label:hover{ transform:translateY(-1px); }
+  .test-pill input:disabled ~ label{ opacity:.55; cursor:not-allowed; transform:none; }
+
+  .test-note{
+    font-size:12px; color:var(--ink-muted);
+    margin:10px 0 4px;
+    line-height:1.5;
+    display:none;
+  }
+  .test-note.show{ display:block; }
+
+  .section-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    gap:12px;
+    margin-top:16px;
+  }
+  .section-card{
+    background:var(--surface-2);
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:14px 16px;
+    transition:border-color .3s ease, box-shadow .3s ease, background .3s ease;
+  }
+  .section-card .s-name{ font-size:14.5px; font-weight:800; margin-bottom:10px; letter-spacing:-0.01em; }
+  .section-card .s-row{ display:flex; justify-content:space-between; align-items:baseline; margin-top:4px; }
+  .section-card .s-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); font-weight:700; }
+  .section-card .s-value{ font-family:var(--font-mono); font-size:14px; font-weight:700; }
+  .section-card.active{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+    background:var(--surface);
+  }
+  .section-card.done{ opacity:.55; }
+  .section-card.done .s-name::after{ content:" ✓"; color:var(--success); }
+
+  /* ============================= MAIN GRID ============================= */
+  .stage{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:22px; align-items:stretch; margin-top:24px; }
+  @media (max-width:760px){
+    .stage{ grid-template-columns:1fr; }
+    .btn-row{ margin-left:0; width:100%; }
+    button.action{ flex:1; justify-content:center; }
+  }
+
+  .ring-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:34px 20px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; overflow:hidden; min-height:420px;
+    transition:background-color .45s ease, border-color .45s ease;
+  }
+
+  .status-chip{
+    position:absolute; top:20px; left:20px;
+    font-size:11.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    padding:6px 12px; border-radius:999px;
+    background:var(--surface-2); color:var(--ink-muted);
+    border:1px solid var(--border);
+    display:flex; align-items:center; gap:6px;
+  }
+  .status-chip .dot{ width:6px;height:6px;border-radius:50%; background:var(--ink-muted); }
+  .status-chip[data-state="running"]{ color:var(--success); border-color:transparent; background:var(--success-soft); }
+  .status-chip[data-state="running"] .dot{ background:var(--success); animation:pulse-dot 1.4s ease-in-out infinite; }
+  .status-chip[data-state="paused"]{ color:var(--accent-strong); background:var(--accent-soft); }
+  .status-chip[data-state="paused"] .dot{ background:var(--accent); }
+  .status-chip[data-state="completed"]{ color:var(--success); background:var(--success-soft); }
+
+  @keyframes pulse-dot{
+    0%,100%{ box-shadow:0 0 0 0 var(--success-soft); }
+    50%{ box-shadow:0 0 0 5px transparent; }
+  }
+
+  .q-pill{
+    position:absolute; top:20px; right:20px;
+    font-family:var(--font-mono); font-size:12.5px; font-weight:700;
+    color:var(--ink-muted); background:var(--surface-2);
+    border:1px solid var(--border); padding:6px 12px; border-radius:999px;
+    text-align:right; max-width:52%;
+  }
+  .q-pill .section-tag{ display:block; font-size:10.5px; color:var(--accent-strong); font-weight:800; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
+
+  .ring-wrap{ position:relative; width:min(320px, 68vw); height:min(320px, 68vw); margin-top:14px; }
+  .ring-wrap svg{ width:100%; height:100%; overflow:visible; }
+  .ring-track{ fill:none; stroke:var(--ring-track); stroke-width:10; }
+  .ring-progress{
+    fill:none; stroke:var(--accent); stroke-width:10; stroke-linecap:round;
+    transform:rotate(-90deg); transform-origin:50% 50%;
+    transition:stroke .3s ease;
+  }
+  .ring-progress.urgent{ stroke:var(--danger); }
+  .tick{ stroke:var(--ring-track); stroke-width:2; transition:stroke .2s ease; }
+
+  .ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+  .ring-time{
+    font-family:var(--font-mono); font-weight:700; font-size:clamp(38px, 8vw, 54px);
+    letter-spacing:-0.02em; font-variant-numeric:tabular-nums;
+    transition:color .2s ease, transform .12s ease;
+  }
+  .ring-time.beat{ transform:scale(1.06); }
+  .ring-time.urgent{ color:var(--danger); }
+  .ring-sub{ margin-top:4px; font-size:12px; font-weight:600; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.08em; }
+
+  .ring-hint{ margin-top:20px; font-size:13px; color:var(--ink-muted); text-align:center; max-width:280px; line-height:1.5; }
+
+  /* section timer strip (test mode) shown beneath the ring */
+  .section-timer-strip{
+    display:none;
+    width:100%; max-width:320px;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px dashed var(--border);
+  }
+  .section-timer-strip.show{ display:block; }
+  .section-timer-strip .sts-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .section-timer-strip .sts-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); font-weight:700; }
+  .section-timer-strip .sts-value{ font-family:var(--font-mono); font-weight:700; font-size:16px; }
+  .section-timer-strip .sts-value.urgent{ color:var(--danger); }
+  .sts-bar{ height:6px; border-radius:999px; background:var(--ring-track); overflow:hidden; }
+  .sts-bar-fill{ height:100%; width:100%; background:linear-gradient(90deg, var(--success), var(--accent)); border-radius:999px; transition:width .3s linear; }
+
+  /* ---- Side panel ---- */
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:22px; display:flex; flex-direction:column; gap:14px;
+    transition:background-color .45s ease, border-color .45s ease;
+  }
+  .panel h2{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-muted); margin:0 0 2px; font-weight:800; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:12px 14px; display:flex; flex-direction:column; gap:4px;
+    transition:background-color .3s ease, transform .15s ease;
+  }
+  .stat .label{ font-size:11px; color:var(--ink-muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .stat .value{ font-family:var(--font-mono); font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .stat.wide{ grid-column:1 / -1; }
+  .stat.accent .value{ color:var(--accent-strong); }
+  .stat.success .value{ color:var(--success); }
+
+  .progress-line{ height:8px; border-radius:999px; background:var(--ring-track); overflow:hidden; margin-top:2px; }
+  .progress-line-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--accent), var(--success));
+    border-radius:999px; transition:width .3s cubic-bezier(.4,0,.2,1);
+  }
+
+  #testStatsGroup{ display:none; flex-direction:column; gap:10px; }
+  #testStatsGroup.show{ display:flex; }
+  #manualStatsGroup.hide{ display:none; }
+
+  /* ============================= WEEKLY GOALS ============================= */
+  .goals-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px 22px;
+    margin-top:20px;
+    transition:background-color .45s ease, border-color .45s ease;
+  }
+  .goals-head{ display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .goals-head h2{ font-size:15px; margin:0 0 4px; font-weight:800; letter-spacing:-0.01em; }
+  .goals-sub{ font-size:12.5px; color:var(--ink-muted); max-width:340px; line-height:1.5; }
+  .goals-deadline{ display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .goals-deadline label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); font-weight:700; }
+  .goals-deadline input[type="date"]{
+    font-family:var(--font-ui); font-size:14px; font-weight:600;
+    padding:8px 10px; border-radius:var(--radius-sm); border:1.5px solid var(--border);
+    background:var(--surface-2); color:var(--ink); color-scheme:light dark;
+  }
+  .goals-deadline input[type="date"]:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .goals-countdown{ font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); color:var(--ink-muted); white-space:nowrap; }
+  .goals-countdown.urgent{ color:var(--danger); background:rgba(194,68,68,0.12); border-color:transparent; }
+
+  .goals-add-row{ display:flex; gap:10px; margin-bottom:14px; }
+  .goals-add-row input[type="text"]{
+    flex:1; font-family:var(--font-ui); font-size:14.5px; padding:10px 12px;
+    border-radius:var(--radius-sm); border:1.5px solid var(--border);
+    background:var(--surface-2); color:var(--ink); min-width:0;
+  }
+  .goals-add-row input[type="text"]:focus-visible{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+
+  .goals-list{ list-style:none; margin:0 0 16px; padding:0; display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; }
+  .goal-item{
+    display:flex; align-items:center; gap:10px;
+    background:var(--surface-2); border:1.5px solid var(--border);
+    border-radius:var(--radius-sm); padding:10px 12px;
+    transition:border-color .2s ease, opacity .2s ease;
+  }
+  .goal-item.done{ opacity:.6; }
+  .goal-item.done .goal-text{ text-decoration:line-through; color:var(--ink-muted); }
+  .goal-check{
+    width:20px; height:20px; border-radius:6px; border:2px solid var(--ink-muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;
+    background:var(--surface); transition:border-color .2s ease, background .2s ease;
+  }
+  .goal-check svg{ width:12px; height:12px; opacity:0; transition:opacity .15s ease; stroke:var(--surface); }
+  .goal-item.done .goal-check{ background:var(--success); border-color:var(--success); }
+  .goal-item.done .goal-check svg{ opacity:1; }
+  .goal-check:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .goal-text{ flex:1; font-size:14.5px; font-weight:600; word-break:break-word; }
+  .goal-del{
+    background:transparent; border:none; color:var(--ink-muted); cursor:pointer;
+    width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease, color .15s ease; flex:none;
+  }
+  .goal-del:hover{ background:rgba(194,68,68,0.12); color:var(--danger); }
+  .goal-del:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .goal-del svg{ width:14px; height:14px; }
+
+  .goals-empty{ font-size:13px; color:var(--ink-muted); text-align:center; padding:18px 0; }
+
+  .goals-footer{ display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; }
+  .goals-progress-wrap{ flex:1; min-width:160px; }
+  .goals-progress-text{ font-size:12px; color:var(--ink-muted); margin-top:6px; font-weight:600; }
+
+  .goals-history{ margin-top:16px; border-top:1px dashed var(--border); padding-top:12px; }
+  .goals-history-toggle{
+    background:none; border:none; cursor:pointer; font-size:12.5px; font-weight:700;
+    color:var(--ink-muted); padding:4px 0; display:flex; align-items:center; gap:6px;
+  }
+  .goals-history-toggle:hover{ color:var(--accent-strong); }
+  .goals-history-list{ display:none; flex-direction:column; gap:10px; margin-top:10px; }
+  .goals-history-list.open{ display:flex; }
+  .history-week{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:12px 14px;
+  }
+  .history-week-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; flex-wrap:wrap; gap:6px; }
+  .history-week-range{ font-size:13px; font-weight:700; }
+  .history-week-stat{ font-size:12px; font-weight:700; color:var(--success); }
+  .history-week-goals{ font-size:12.5px; color:var(--ink-muted); line-height:1.6; }
+  .history-week-goals .hdone{ text-decoration:line-through; }
+
+  /* ============================= OVERLAYS ============================= */
+  .overlay{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(15,20,25,0.55); backdrop-filter:blur(6px);
+    opacity:0; pointer-events:none; transition:opacity .35s ease; z-index:50;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+  .overlay-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:22px;
+    box-shadow:var(--shadow-lg); padding:44px 40px; text-align:center; max-width:360px;
+    transform:translateY(16px) scale(.96); transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .overlay.show .overlay-card{ transform:translateY(0) scale(1); }
+  .overlay-card .badge{
+    width:64px;height:64px; margin:0 auto 18px; border-radius:50%;
+    background:var(--success-soft); display:flex;align-items:center;justify-content:center;
+    color:var(--success); animation:pop-in .5s cubic-bezier(.34,1.56,.64,1) .1s both;
+  }
+  @keyframes pop-in{ from{ transform:scale(0); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .overlay-card h3{ font-size:22px; margin:0 0 8px; letter-spacing:-.01em; }
+  .overlay-card p{ font-size:14px; color:var(--ink-muted); margin:0 0 22px; line-height:1.5; }
+
+  /* quick, buttonless section-transition toast */
+  .section-toast{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(15,20,25,0.45); backdrop-filter:blur(4px);
+    opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:45;
+  }
+  .section-toast.show{ opacity:1; }
+  .section-toast-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    box-shadow:var(--shadow-lg); padding:32px 38px; text-align:center;
+    transform:scale(.92); transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .section-toast.show .section-toast-card{ transform:scale(1); }
+  .section-toast-card .badge{
+    width:52px; height:52px; margin:0 auto 14px; border-radius:50%;
+    background:var(--accent-soft); color:var(--accent-strong);
+    display:flex; align-items:center; justify-content:center;
+    animation:pop-in .4s cubic-bezier(.34,1.56,.64,1) .05s both;
+  }
+  .section-toast-card h4{ font-size:18px; margin:0 0 4px; }
+  .section-toast-card p{ font-size:13px; color:var(--ink-muted); margin:0; }
+
+  .confetti-piece{
+    position:fixed; top:-24px; width:8px; height:14px; border-radius:2px;
+    z-index:49; pointer-events:none; animation:confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall{ to{ transform:translateY(115vh) rotate(540deg); opacity:.85; } }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
+  .footer-note{ text-align:center; margin-top:28px; font-size:12px; color:var(--ink-muted); }
+  .sr-only{ position:absolute; width:1px;height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <h1>Sprint</h1>
+        <div class="sub">Question practice timer</div>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
+      <span class="knob" id="themeKnob">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
+      </span>
+    </button>
+  </header>
+
+  <section class="controls" aria-label="Timer settings">
+    <div class="field switch-field">
+      <label for="testModeToggle">Test Mode</label>
+      <label class="mode-switch">
+        <input type="checkbox" id="testModeToggle" aria-label="Enable test mode">
+        <span class="track"><span class="thumb"></span></span>
+        <span class="switch-label" id="testModeStateLabel">Off</span>
+      </label>
+    </div>
+
+    <div class="field switch-field">
+      <label for="beepToggle">Question Beep</label>
+      <label class="mode-switch">
+        <input type="checkbox" id="beepToggle" checked aria-label="Enable beep at end of each question's time">
+        <span class="track"><span class="thumb"></span></span>
+        <span class="switch-label" id="beepStateLabel">On</span>
+      </label>
+    </div>
+
+    <div class="field" id="numQuestionsField">
+      <label for="numQuestions">Questions</label>
+      <input type="number" id="numQuestions" min="1" max="500" value="10" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="timePerQuestion" id="timePerQuestionLabel">Time per question</label>
+      <input type="number" id="timePerQuestion" min="1" max="999" value="60" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="timeUnit">Unit</label>
+      <select id="timeUnit">
+        <option value="seconds" selected>Seconds</option>
+        <option value="minutes">Minutes</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="action btn-start" id="startBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <span id="startBtnLabel">Start</span>
+      </button>
+      <button class="action btn-secondary" id="pauseBtn" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" id="pauseIcon"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        <span id="pauseBtnLabel">Pause</span>
+      </button>
+      <button class="action btn-reset" id="resetBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        Reset
+      </button>
+    </div>
+  </section>
+
+  <div class="test-slide" id="testSlide">
+    <div class="test-slide-inner">
+      <div class="test-card">
+        <h2>Select Test</h2>
+        <div class="test-pills" id="testPills">
+          <span class="test-pill">
+            <input type="radio" name="testSelect" id="testCAT" value="CAT">
+            <label for="testCAT"><span class="radio-dot"></span>CAT</label>
+          </span>
+          <span class="test-pill">
+            <input type="radio" name="testSelect" id="testSNAP" value="SNAP">
+            <label for="testSNAP"><span class="radio-dot"></span>SNAP</label>
+          </span>
+        </div>
+        <p class="test-note" id="testNote"></p>
+        <div class="section-grid" id="sectionGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="goals-card" aria-label="Weekly goals">
+    <div class="goals-head">
+      <div>
+        <h2>Weekly Goals</h2>
+        <div class="goals-sub" id="goalsSub">Add the CAT / SNAP topics you want to finish by your deadline, and check them off as you go.</div>
+      </div>
+      <div class="goals-deadline">
+        <label for="goalDeadline">This week's deadline</label>
+        <input type="date" id="goalDeadline">
+        <div class="goals-countdown" id="goalsCountdown">No deadline set</div>
+      </div>
+    </div>
+
+    <div class="goals-add-row">
+      <input type="text" id="goalInput" placeholder="e.g. VARC — finish 3 RC practice sets" maxlength="100">
+      <button class="action btn-secondary" id="goalAddBtn" type="button">Add</button>
+    </div>
+
+    <ul class="goals-list" id="goalsList"></ul>
+
+    <div class="goals-footer">
+      <div class="goals-progress-wrap">
+        <div class="progress-line"><div class="progress-line-fill" id="goalsProgressFill"></div></div>
+        <div class="goals-progress-text" id="goalsProgressText">0 / 0 completed</div>
+      </div>
+      <button class="action btn-start" id="finishWeekBtn" type="button" disabled>Finish this week</button>
+    </div>
+
+    <div class="goals-history" id="goalsHistorySection" style="display:none;">
+      <button class="goals-history-toggle" id="goalsHistoryToggle" aria-expanded="false" type="button">
+        <span id="goalsHistoryLabel">Show past weeks</span><span id="goalsHistoryCount">(0)</span>
+      </button>
+      <div class="goals-history-list" id="goalsHistoryList"></div>
+    </div>
+  </section>
+
+  <section class="stage">
+    <div class="ring-card">
+      <div class="status-chip" id="statusChip" data-state="idle"><span class="dot"></span><span id="statusText">Idle</span></div>
+      <div class="q-pill" id="qPill"><span class="section-tag" id="qPillSectionTag" style="display:none;"></span><span id="qPillMain">Question 0 of 0</span></div>
+
+      <div class="ring-wrap">
+        <svg viewBox="0 0 200 200" id="ringSvg" role="img" aria-label="Countdown progress">
+          <g id="tickGroup"></g>
+          <circle class="ring-track" cx="100" cy="100" r="86"></circle>
+          <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="86"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-time" id="ringTime">00:00</div>
+          <div class="ring-sub" id="ringSub">Ready</div>
+        </div>
+      </div>
+
+      <p class="ring-hint" id="ringHint">Set your questions and time per question, then press Start. Every question restarts the clock from the beginning.</p>
+
+      <div class="section-timer-strip" id="sectionTimerStrip">
+        <div class="sts-row">
+          <span class="sts-label">Section remaining — <span id="stsSectionName">—</span></span>
+          <span class="sts-value" id="stsValue">00:00</span>
+        </div>
+        <div class="sts-bar"><div class="sts-bar-fill" id="stsBarFill"></div></div>
+      </div>
+    </div>
+
+    <div class="panel" aria-label="Session details">
+      <h2>Session</h2>
+      <div class="stat-grid" id="manualStatsGroup">
+        <div class="stat wide accent">
+          <div class="label">Current question</div>
+          <div class="value" id="statCurrent">Question 0 of 0</div>
+          <div class="progress-line"><div class="progress-line-fill" id="progressFill"></div></div>
+        </div>
+        <div class="stat success">
+          <div class="label">Completed</div>
+          <div class="value" id="statCompleted">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Remaining</div>
+          <div class="value" id="statRemainingQ">0</div>
+        </div>
+        <div class="stat wide">
+          <div class="label">Total questions</div>
+          <div class="value" id="statTotal">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Elapsed time</div>
+          <div class="value" id="statElapsed">00:00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Time remaining</div>
+          <div class="value" id="statRemainingTime">00:00</div>
+        </div>
+      </div>
+
+      <div class="stat-grid" id="testStatsGroup">
+        <div class="stat wide accent">
+          <div class="label">Current test</div>
+          <div class="value" id="statTestName">—</div>
+        </div>
+        <div class="stat wide">
+          <div class="label">Current section</div>
+          <div class="value" id="statSectionName">—</div>
+          <div class="progress-line"><div class="progress-line-fill" id="progressFillTest"></div></div>
+        </div>
+        <div class="stat">
+          <div class="label">Current question</div>
+          <div class="value" id="statSectionQ">0 / 0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Overall progress</div>
+          <div class="value" id="statOverallProgress">0 / 0</div>
+        </div>
+        <div class="stat success">
+          <div class="label">Completed</div>
+          <div class="value" id="statCompletedTest">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Remaining</div>
+          <div class="value" id="statRemainingTest">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Section remaining</div>
+          <div class="value" id="statSectionRemaining">00:00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Question timer</div>
+          <div class="value" id="statQuestionTimer">00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Elapsed time</div>
+          <div class="value" id="statElapsedTest">00:00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Total remaining</div>
+          <div class="value" id="statRemainingTotalTest">00:00</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">Runs entirely offline. Timing stays accurate even if you switch tabs or apps.</p>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+  <div class="overlay-card">
+    <div class="badge">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h3 id="overlayTitle">Session Completed 🎉</h3>
+    <p id="overlaySummary">You worked through every question. Nice pace.</p>
+    <button class="action btn-start" id="overlayResetBtn" style="width:100%; justify-content:center;">Start a new session</button>
+  </div>
+</div>
+
+<div class="section-toast" id="sectionToast">
+  <div class="section-toast-card">
+    <div class="badge">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h4>Section Completed</h4>
+    <p>Moving to next section…</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================= TEST CONFIGURATION ============================= */
+  /* Add future exams (XAT, NMAT, CMAT, ...) here without touching timer logic. */
+  const TESTS = {
+    CAT: {
+      name: "CAT",
+      sections: [
+        { name: "VARC", questions: 24, sectionMinutes: 40 },
+        { name: "DILR", questions: 22, sectionMinutes: 40 },
+        { name: "QA",   questions: 22, sectionMinutes: 40 }
+      ]
+    },
+    SNAP: {
+      name: "SNAP",
+      note: "SNAP has no official sectional time limit (60 questions in 60 minutes overall). Section times below are a practice split proportional to each section's question count.",
+      sections: [
+        { name: "General English",              questions: 15, sectionMinutes: 15 },
+        { name: "Analytical & Logical Reasoning", questions: 25, sectionMinutes: 25 },
+        { name: "Quantitative, DI & DS",          questions: 20, sectionMinutes: 20 }
+      ]
+    }
+  };
+
+  /* ============================= DOM ============================= */
+  const el = {
+    numQuestionsField: document.getElementById('numQuestionsField'),
+    numQuestions: document.getElementById('numQuestions'),
+    timePerQuestion: document.getElementById('timePerQuestion'),
+    timeUnit: document.getElementById('timeUnit'),
+    beepToggle: document.getElementById('beepToggle'),
+    beepStateLabel: document.getElementById('beepStateLabel'),
+
+    /* weekly goals */
+    goalDeadline: document.getElementById('goalDeadline'),
+    goalsCountdown: document.getElementById('goalsCountdown'),
+    goalInput: document.getElementById('goalInput'),
+    goalAddBtn: document.getElementById('goalAddBtn'),
+    goalsList: document.getElementById('goalsList'),
+    goalsProgressFill: document.getElementById('goalsProgressFill'),
+    goalsProgressText: document.getElementById('goalsProgressText'),
+    finishWeekBtn: document.getElementById('finishWeekBtn'),
+    goalsHistorySection: document.getElementById('goalsHistorySection'),
+    goalsHistoryToggle: document.getElementById('goalsHistoryToggle'),
+    goalsHistoryLabel: document.getElementById('goalsHistoryLabel'),
+    goalsHistoryCount: document.getElementById('goalsHistoryCount'),
+    goalsHistoryList: document.getElementById('goalsHistoryList'),
+
+    startBtn: document.getElementById('startBtn'),
+    startBtnLabel: document.getElementById('startBtnLabel'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    pauseBtnLabel: document.getElementById('pauseBtnLabel'),
+    pauseIcon: document.getElementById('pauseIcon'),
+    resetBtn: document.getElementById('resetBtn'),
+    themeToggle: document.getElementById('themeToggle'),
+    themeIcon: document.getElementById('themeIcon'),
+    statusChip: document.getElementById('statusChip'),
+    statusText: document.getElementById('statusText'),
+    qPill: document.getElementById('qPill'),
+    qPillMain: document.getElementById('qPillMain'),
+    qPillSectionTag: document.getElementById('qPillSectionTag'),
+    ringProgress: document.getElementById('ringProgress'),
+    ringTime: document.getElementById('ringTime'),
+    ringSub: document.getElementById('ringSub'),
+    ringHint: document.getElementById('ringHint'),
+    tickGroup: document.getElementById('tickGroup'),
+    progressFill: document.getElementById('progressFill'),
+    overlay: document.getElementById('overlay'),
+    overlaySummary: document.getElementById('overlaySummary'),
+    overlayResetBtn: document.getElementById('overlayResetBtn'),
+
+    /* manual stats */
+    manualStatsGroup: document.getElementById('manualStatsGroup'),
+    statCurrent: document.getElementById('statCurrent'),
+    statCompleted: document.getElementById('statCompleted'),
+    statRemainingQ: document.getElementById('statRemainingQ'),
+    statTotal: document.getElementById('statTotal'),
+    statElapsed: document.getElementById('statElapsed'),
+    statRemainingTime: document.getElementById('statRemainingTime'),
+
+    /* test mode controls */
+    testModeToggle: document.getElementById('testModeToggle'),
+    testModeStateLabel: document.getElementById('testModeStateLabel'),
+    testSlide: document.getElementById('testSlide'),
+    testPills: document.getElementById('testPills'),
+    testNote: document.getElementById('testNote'),
+    sectionGrid: document.getElementById('sectionGrid'),
+    timePerQuestionLabel: document.getElementById('timePerQuestionLabel'),
+
+    /* section timer strip on ring card */
+    sectionTimerStrip: document.getElementById('sectionTimerStrip'),
+    stsSectionName: document.getElementById('stsSectionName'),
+    stsValue: document.getElementById('stsValue'),
+    stsBarFill: document.getElementById('stsBarFill'),
+
+    /* test stats */
+    testStatsGroup: document.getElementById('testStatsGroup'),
+    statTestName: document.getElementById('statTestName'),
+    statSectionName: document.getElementById('statSectionName'),
+    progressFillTest: document.getElementById('progressFillTest'),
+    statSectionQ: document.getElementById('statSectionQ'),
+    statOverallProgress: document.getElementById('statOverallProgress'),
+    statCompletedTest: document.getElementById('statCompletedTest'),
+    statRemainingTest: document.getElementById('statRemainingTest'),
+    statSectionRemaining: document.getElementById('statSectionRemaining'),
+    statQuestionTimer: document.getElementById('statQuestionTimer'),
+    statElapsedTest: document.getElementById('statElapsedTest'),
+    statRemainingTotalTest: document.getElementById('statRemainingTotalTest'),
+
+    sectionToast: document.getElementById('sectionToast'),
+  };
+
+  const RING_R = 86;
+  const RING_CIRC = 2 * Math.PI * RING_R;
+  el.ringProgress.style.strokeDasharray = RING_CIRC.toFixed(2);
+
+  /* build 60 tick marks around the ring, clock-face style */
+  (function buildTicks(){
+    const cx = 100, cy = 100, rOuter = 98, rInner = 93, rInnerMajor = 90;
+    for(let i=0;i<60;i++){
+      const isMajor = i % 5 === 0;
+      const angle = (i / 60) * Math.PI * 2 - Math.PI/2;
+      const x1 = cx + Math.cos(angle) * rOuter;
+      const y1 = cy + Math.sin(angle) * rOuter;
+      const x2 = cx + Math.cos(angle) * (isMajor ? rInnerMajor : rInner);
+      const y2 = cy + Math.sin(angle) * (isMajor ? rInnerMajor : rInner);
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', x1.toFixed(2));
+      line.setAttribute('y1', y1.toFixed(2));
+      line.setAttribute('x2', x2.toFixed(2));
+      line.setAttribute('y2', y2.toFixed(2));
+      line.setAttribute('class','tick');
+      line.setAttribute('stroke-width', isMajor ? '2.5' : '1.2');
+      el.tickGroup.appendChild(line);
+    }
+  })();
+
+  /* ============================= THEME ============================= */
+  function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme);
+    el.themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    el.themeIcon.innerHTML = theme === 'dark'
+      ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+      : '<circle cx="12" cy="12" r="5"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="3.2"/><line x1="12" y1="20.8" x2="12" y2="23"/><line x1="1" y1="12" x2="3.2" y2="12"/><line x1="20.8" y1="12" x2="23" y2="12"/><line x1="4.2" y1="4.2" x2="5.7" y2="5.7"/><line x1="18.3" y1="18.3" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="5.7" y2="18.3"/><line x1="18.3" y1="5.7" x2="19.8" y2="4.2"/></g>';
+    try{ localStorage.setItem('sprint-theme', theme); }catch(e){}
+  }
+  const savedTheme = (function(){
+    try{ return localStorage.getItem('sprint-theme'); }catch(e){ return null; }
+  })();
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+
+  el.themeToggle.addEventListener('click', function(){
+    const current = document.documentElement.getAttribute('data-theme');
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ============================= QUESTION BEEP TOGGLE ============================= */
+  /* Controls only the countdown beep heard in the last seconds of each question.
+     Turning it off does NOT change how the timer runs — questions and sections
+     still advance on exactly the same schedule; the sound is just muted.
+     Section-end beeps always play, on or off, and no popup appears until a
+     section actually finishes (per-question changes are always silent visually). */
+  let beepEnabled = true;
+  (function loadBeepPref(){
+    try{
+      const saved = localStorage.getItem('sprint-beep-enabled');
+      if(saved !== null) beepEnabled = saved === '1';
+    }catch(e){}
+    el.beepToggle.checked = beepEnabled;
+    el.beepStateLabel.textContent = beepEnabled ? 'On' : 'Off';
+  })();
+  el.beepToggle.addEventListener('change', function(){
+    beepEnabled = el.beepToggle.checked;
+    el.beepStateLabel.textContent = beepEnabled ? 'On' : 'Off';
+    try{ localStorage.setItem('sprint-beep-enabled', beepEnabled ? '1' : '0'); }catch(e){}
+    if(sessionActive) renderStatic();
+  });
+
+  /* ============================= WEEKLY GOALS ============================= */
+  /* A separate, independent feature from the timer above — lets you list the
+     topics you want to finish by a deadline you pick, check them off, and
+     keeps a history log of past weeks once you close one out. Everything is
+     saved in this browser via localStorage, so it's still here next time you
+     open the page on this device. */
+  let goals = [];            // [{id, text, done}]
+  let goalDeadlineStr = '';  // 'yyyy-mm-dd', chosen by the user
+  let goalWeekStart = null;  // 'yyyy-mm-dd', set automatically when the first goal of a fresh week is added
+  let goalsHistory = [];     // [{startDate, deadline, finishedAt, goals:[{text, done}]}]
+
+  function makeGoalId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function todayISO(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  function formatDateDisplay(iso){
+    if(!iso) return '—';
+    const p = iso.split('-').map(Number);
+    if(p.length !== 3 || p.some(isNaN)) return iso;
+    const d = new Date(p[0], p[1]-1, p[2]);
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  }
+
+  function loadGoalsState(){
+    try{ const g = localStorage.getItem('sprint-goals'); goals = g ? JSON.parse(g) : []; }catch(e){ goals = []; }
+    try{ goalDeadlineStr = localStorage.getItem('sprint-goal-deadline') || ''; }catch(e){ goalDeadlineStr = ''; }
+    try{ goalWeekStart = localStorage.getItem('sprint-goal-start') || null; }catch(e){ goalWeekStart = null; }
+    try{ const h = localStorage.getItem('sprint-goals-history'); goalsHistory = h ? JSON.parse(h) : []; }catch(e){ goalsHistory = []; }
+  }
+  function saveGoalsState(){
+    try{ localStorage.setItem('sprint-goals', JSON.stringify(goals)); }catch(e){}
+    try{ localStorage.setItem('sprint-goal-deadline', goalDeadlineStr || ''); }catch(e){}
+    try{
+      if(goalWeekStart) localStorage.setItem('sprint-goal-start', goalWeekStart);
+      else localStorage.removeItem('sprint-goal-start');
+    }catch(e){}
+    try{ localStorage.setItem('sprint-goals-history', JSON.stringify(goalsHistory)); }catch(e){}
+  }
+
+  function renderGoalsList(){
+    el.goalsList.innerHTML = '';
+    if(goals.length === 0){
+      const empty = document.createElement('li');
+      empty.className = 'goals-empty';
+      empty.textContent = 'No goals yet — add topics you want to finish this week.';
+      el.goalsList.appendChild(empty);
+      return;
+    }
+    goals.forEach(function(g){
+      const li = document.createElement('li');
+      li.className = 'goal-item' + (g.done ? ' done' : '');
+      li.dataset.id = g.id;
+      li.innerHTML =
+        '<span class="goal-check" role="checkbox" aria-checked="' + (g.done ? 'true' : 'false') + '" tabindex="0" aria-label="Mark goal complete">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
+        '</span>' +
+        '<span class="goal-text">' + escapeHtml(g.text) + '</span>' +
+        '<button class="goal-del" type="button" aria-label="Delete goal">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
+        '</button>';
+      el.goalsList.appendChild(li);
+    });
+  }
+
+  function renderGoalsProgress(){
+    const total = goals.length;
+    const completed = goals.filter(function(g){ return g.done; }).length;
+    el.goalsProgressText.textContent = completed + ' / ' + total + ' completed';
+    el.goalsProgressFill.style.width = (total > 0 ? (completed/total)*100 : 0).toFixed(1) + '%';
+    el.finishWeekBtn.disabled = total === 0;
+  }
+
+  function renderGoalsCountdown(){
+    el.goalsCountdown.classList.remove('urgent');
+    if(!goalDeadlineStr){
+      el.goalsCountdown.textContent = 'No deadline set';
+      return;
+    }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const p = goalDeadlineStr.split('-').map(Number);
+    const deadline = new Date(p[0], p[1]-1, p[2]); deadline.setHours(0,0,0,0);
+    const diffDays = Math.round((deadline - today) / 86400000);
+    let text;
+    if(diffDays > 1){ text = diffDays + ' days left'; if(diffDays <= 3) el.goalsCountdown.classList.add('urgent'); }
+    else if(diffDays === 1){ text = '1 day left'; el.goalsCountdown.classList.add('urgent'); }
+    else if(diffDays === 0){ text = 'Deadline is today'; el.goalsCountdown.classList.add('urgent'); }
+    else{ const overdue = Math.abs(diffDays); text = 'Overdue by ' + overdue + (overdue === 1 ? ' day' : ' days'); el.goalsCountdown.classList.add('urgent'); }
+    el.goalsCountdown.textContent = text;
+  }
+
+  function renderGoalsHistory(){
+    if(goalsHistory.length === 0){
+      el.goalsHistorySection.style.display = 'none';
+      return;
+    }
+    el.goalsHistorySection.style.display = 'block';
+    el.goalsHistoryCount.textContent = ' (' + goalsHistory.length + ')';
+    el.goalsHistoryList.innerHTML = '';
+    goalsHistory.forEach(function(week){
+      const total = week.goals.length;
+      const completed = week.goals.filter(function(g){ return g.done; }).length;
+      const goalsHtml = week.goals.length
+        ? week.goals.map(function(g){ return '<span class="' + (g.done ? 'hdone' : '') + '">' + escapeHtml(g.text) + '</span>'; }).join(', ')
+        : 'No goals recorded';
+      const div = document.createElement('div');
+      div.className = 'history-week';
+      div.innerHTML =
+        '<div class="history-week-head">' +
+          '<span class="history-week-range">' + formatDateDisplay(week.startDate) + ' → ' + formatDateDisplay(week.deadline) + '</span>' +
+          '<span class="history-week-stat">' + completed + ' / ' + total + ' done</span>' +
+        '</div>' +
+        '<div class="history-week-goals">' + goalsHtml + '</div>';
+      el.goalsHistoryList.appendChild(div);
+    });
+  }
+
+  function renderGoalsAll(){
+    renderGoalsList();
+    renderGoalsProgress();
+    renderGoalsCountdown();
+    renderGoalsHistory();
+  }
+
+  function addGoalFromInput(){
+    const text = el.goalInput.value.trim();
+    if(!text) return;
+    if(!goalWeekStart) goalWeekStart = todayISO();
+    goals.push({ id: makeGoalId(), text: text, done: false });
+    el.goalInput.value = '';
+    saveGoalsState();
+    renderGoalsAll();
+    el.goalInput.focus();
+  }
+  function toggleGoal(id){
+    const g = goals.find(function(x){ return x.id === id; });
+    if(!g) return;
+    g.done = !g.done;
+    saveGoalsState();
+    renderGoalsAll();
+  }
+  function deleteGoal(id){
+    goals = goals.filter(function(x){ return x.id !== id; });
+    if(goals.length === 0) goalWeekStart = null;
+    saveGoalsState();
+    renderGoalsAll();
+  }
+  function finishGoalWeek(){
+    if(goals.length === 0) return;
+    goalsHistory.unshift({
+      startDate: goalWeekStart || todayISO(),
+      deadline: goalDeadlineStr || todayISO(),
+      finishedAt: todayISO(),
+      goals: goals.map(function(g){ return { text: g.text, done: g.done }; })
+    });
+    goals = [];
+    goalWeekStart = null;
+    goalDeadlineStr = '';
+    el.goalDeadline.value = '';
+    saveGoalsState();
+    renderGoalsAll();
+  }
+
+  el.goalAddBtn.addEventListener('click', addGoalFromInput);
+  el.goalInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); addGoalFromInput(); } });
+  el.goalsList.addEventListener('click', function(e){
+    const item = e.target.closest('.goal-item');
+    if(!item) return;
+    if(e.target.closest('.goal-check')) toggleGoal(item.dataset.id);
+    else if(e.target.closest('.goal-del')) deleteGoal(item.dataset.id);
+  });
+  el.goalsList.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const check = e.target.closest('.goal-check');
+    if(!check) return;
+    e.preventDefault();
+    const item = e.target.closest('.goal-item');
+    if(item) toggleGoal(item.dataset.id);
+  });
+  el.goalDeadline.addEventListener('change', function(){
+    goalDeadlineStr = el.goalDeadline.value;
+    saveGoalsState();
+    renderGoalsAll();
+  });
+  el.finishWeekBtn.addEventListener('click', finishGoalWeek);
+  el.goalsHistoryToggle.addEventListener('click', function(){
+    const isOpen = el.goalsHistoryList.classList.toggle('open');
+    el.goalsHistoryToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    el.goalsHistoryLabel.textContent = isOpen ? 'Hide past weeks' : 'Show past weeks';
+  });
+
+  function initGoals(){
+    loadGoalsState();
+    el.goalDeadline.value = goalDeadlineStr || '';
+    renderGoalsAll();
+  }
+
+  /* ============================= AUDIO ============================= */
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    return audioCtx;
+  }
+  function beepAt(offsetSeconds, freq, duration){
+    const ctx = ensureAudio();
+    if(!ctx) return;
+    const t0 = ctx.currentTime + Math.max(0, offsetSeconds);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.28, t0 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  }
+  function playCountdownBeep(){ beepAt(0, 880, 0.11); }
+  function playSectionCompleteBeeps(){ for(let i=0;i<3;i++){ beepAt(i * 0.22, 1046, 0.13); } }
+  function playCompletionFanfare(){ for(let i=0;i<5;i++){ beepAt(i * 0.24, 1046, 0.14); } }
+
+  /* ============================= STATE ============================= */
+  const STATE = { IDLE:'idle', RUNNING:'running', PAUSED:'paused', COMPLETED:'completed' };
+  const MODE = { MANUAL:'manual', TEST:'test' };
+
+  let state = STATE.IDLE;
+  let mode = MODE.MANUAL;
+  let sessionActive = false;
+
+  /* manual-mode + shared question fields */
+  let totalQuestions = 0;         // manual: total in session. test: total in current section
+  let questionDurationMs = 0;     // per-question duration (both modes)
+  let completedCount = 0;         // manual: total completed. test: completed in current section
+  let currentIndex = 0;           // 0-based index of question in progress (within current section for test mode)
+  let qAnchorTS = 0;
+  let remainingAtAnchor = 0;
+  let lastBeepSecond = null;
+  let intervalId = null;
+  let transitioning = false;
+  let sectionTransitionTimeoutId = null;
+
+  /* test-mode specific */
+  let selectedTestKey = null;
+  let sections = [];              // resolved sections for the active run: {name, questions, ms}
+  let sectionIndex = 0;
+  let completedOverall = 0;
+  let totalQuestionsAllSections = 0;
+  let secAnchorTS = 0;
+  let secRemainingAtAnchor = 0;
+
+  function fmtTime(ms, forceMinutes){
+    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    if(forceMinutes || m > 0){
+      return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+    return String(s).padStart(2,'0');
+  }
+
+  function fmtClock(ms){
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if(h > 0) return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+
+  function setStatus(newState){
+    state = newState;
+    const map = { idle:'Idle', running:'Running', paused:'Paused', completed:'Completed' };
+    el.statusChip.dataset.state = newState;
+    el.statusText.textContent = map[newState];
+  }
+
+  /* ============================= TEST MODE UI ============================= */
+  function renderSectionCards(activeIdx, completedFlags){
+    const test = selectedTestKey ? TESTS[selectedTestKey] : null;
+    el.sectionGrid.innerHTML = '';
+    if(!test) return;
+    test.sections.forEach(function(sec, idx){
+      const card = document.createElement('div');
+      card.className = 'section-card';
+      if(sessionActive && idx === activeIdx) card.classList.add('active');
+      if(completedFlags && completedFlags[idx]) card.classList.add('done');
+      card.innerHTML =
+        '<div class="s-name">' + sec.name + '</div>' +
+        '<div class="s-row"><span class="s-label">Questions</span><span class="s-value">' + sec.questions + '</span></div>' +
+        '<div class="s-row"><span class="s-label">Section time</span><span class="s-value">' + sec.sectionMinutes + ' min</span></div>';
+      el.sectionGrid.appendChild(card);
+    });
+  }
+
+  function onTestSelected(key){
+    selectedTestKey = key;
+    const test = TESTS[key];
+    if(test.note){
+      el.testNote.textContent = test.note;
+      el.testNote.classList.add('show');
+    } else {
+      el.testNote.classList.remove('show');
+      el.testNote.textContent = '';
+    }
+    renderSectionCards(-1, null);
+    updateStartAvailability();
+  }
+
+  el.testPills.addEventListener('change', function(e){
+    if(e.target && e.target.name === 'testSelect'){ onTestSelected(e.target.value); }
+  });
+
+  function setTestMode(on){
+    mode = on ? MODE.TEST : MODE.MANUAL;
+    el.testModeToggle.checked = on;
+    el.testModeStateLabel.textContent = on ? 'On' : 'Off';
+    el.testSlide.classList.toggle('open', on);
+    el.numQuestionsField.style.display = on ? 'none' : 'flex';
+    el.timePerQuestionLabel.textContent = on ? 'Per question time' : 'Time per question';
+    el.manualStatsGroup.classList.toggle('hide', on);
+    el.testStatsGroup.classList.toggle('show', on);
+    el.qPillSectionTag.style.display = on ? 'block' : 'none';
+    el.sectionTimerStrip.classList.toggle('show', on);
+    if(!on){
+      selectedTestKey = null;
+      const checked = el.testPills.querySelector('input[name="testSelect"]:checked');
+      if(checked) checked.checked = false;
+      el.testNote.classList.remove('show');
+      el.sectionGrid.innerHTML = '';
+    }
+    updateStartAvailability();
+  }
+
+  el.testModeToggle.addEventListener('change', function(){
+    if(sessionActive) { el.testModeToggle.checked = (mode === MODE.TEST); return; }
+    setTestMode(el.testModeToggle.checked);
+  });
+
+  function updateStartAvailability(){
+    if(sessionActive) return;
+    el.startBtn.disabled = (mode === MODE.TEST && !selectedTestKey);
+  }
+
+  /* ============================= CONTROL FLOW ============================= */
+  function readPerQuestionMs(){
+    let t = parseFloat(el.timePerQuestion.value);
+    if(!Number.isFinite(t) || t <= 0) t = 1;
+    const unit = el.timeUnit.value;
+    return unit === 'minutes' ? t * 60 * 1000 : t * 1000;
+  }
+
+  function readManualConfig(){
+    let n = parseInt(el.numQuestions.value, 10);
+    if(!Number.isFinite(n) || n < 1) n = 1;
+    return { n: n, ms: readPerQuestionMs() };
+  }
+
+  function lockInputs(locked){
+    el.numQuestions.disabled = locked;
+    el.timePerQuestion.disabled = locked;
+    el.timeUnit.disabled = locked;
+    el.testModeToggle.disabled = locked;
+    const radios = el.testPills.querySelectorAll('input[name="testSelect"]');
+    radios.forEach(function(r){ r.disabled = locked; });
+  }
+
+  function startSession(){
+    ensureAudio();
+    sessionActive = true;
+    lockInputs(true);
+    el.startBtn.disabled = true;
+    el.pauseBtn.disabled = false;
+    el.resetBtn.disabled = false;
+    el.ringHint.style.visibility = 'hidden';
+
+    if(mode === MODE.TEST){
+      const test = TESTS[selectedTestKey];
+      sections = test.sections.map(function(s){ return { name: s.name, questions: s.questions, ms: s.sectionMinutes * 60000 }; });
+      totalQuestionsAllSections = sections.reduce(function(a,s){ return a + s.questions; }, 0);
+      questionDurationMs = readPerQuestionMs();
+      sectionIndex = 0;
+      completedOverall = 0;
+      beginSection();
+      beginQuestion();
+      renderSectionCards(sectionIndex, []);
+    } else {
+      const cfg = readManualConfig();
+      totalQuestions = cfg.n;
+      questionDurationMs = cfg.ms;
+      completedCount = 0;
+      currentIndex = 0;
+      beginQuestion();
+    }
+
+    setStatus(STATE.RUNNING);
+    startDriver();
+    renderStatic();
+  }
+
+  function beginQuestion(){
+    remainingAtAnchor = questionDurationMs;
+    qAnchorTS = performance.now();
+    lastBeepSecond = null;
+  }
+
+  function beginSection(){
+    const sec = sections[sectionIndex];
+    totalQuestions = sec.questions;
+    completedCount = 0;
+    currentIndex = 0;
+    secRemainingAtAnchor = sec.ms;
+    secAnchorTS = performance.now();
+  }
+
+  function startDriver(){
+    stopDriver();
+    intervalId = setInterval(tick, 100);
+    tick();
+  }
+  function stopDriver(){
+    if(intervalId){ clearInterval(intervalId); intervalId = null; }
+  }
+
+  function pauseSession(){
+    if(state !== STATE.RUNNING) return;
+    const now = performance.now();
+    remainingAtAnchor = Math.max(0, remainingAtAnchor - (now - qAnchorTS));
+    if(mode === MODE.TEST){
+      secRemainingAtAnchor = Math.max(0, secRemainingAtAnchor - (now - secAnchorTS));
+    }
+    stopDriver();
+    setStatus(STATE.PAUSED);
+    el.pauseBtnLabel.textContent = 'Resume';
+    el.pauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    renderStatic();
+  }
+
+  function resumeSession(){
+    if(state !== STATE.PAUSED) return;
+    qAnchorTS = performance.now();
+    if(mode === MODE.TEST){ secAnchorTS = performance.now(); }
+    setStatus(STATE.RUNNING);
+    el.pauseBtnLabel.textContent = 'Pause';
+    el.pauseIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+    startDriver();
+  }
+
+  function resetSession(){
+    stopDriver();
+    if(sectionTransitionTimeoutId){ clearTimeout(sectionTransitionTimeoutId); sectionTransitionTimeoutId = null; }
+    state = STATE.IDLE;
+    sessionActive = false;
+    transitioning = false;
+    totalQuestions = 0;
+    questionDurationMs = 0;
+    completedCount = 0;
+    currentIndex = 0;
+    remainingAtAnchor = 0;
+    lastBeepSecond = null;
+
+    sections = [];
+    sectionIndex = 0;
+    completedOverall = 0;
+    totalQuestionsAllSections = 0;
+    secRemainingAtAnchor = 0;
+
+    lockInputs(false);
+    el.startBtn.disabled = false;
+    el.pauseBtn.disabled = true;
+    el.pauseBtnLabel.textContent = 'Pause';
+    el.pauseIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+    el.resetBtn.disabled = false;
+    el.ringHint.style.visibility = 'visible';
+    hideOverlay();
+    hideSectionToast();
+    clearConfetti();
+    setStatus(STATE.IDLE);
+    document.getElementById('overlayTitle').textContent = 'Session Completed 🎉';
+
+    el.ringTime.textContent = '00:00';
+    el.ringTime.classList.remove('urgent','beat');
+    el.ringProgress.classList.remove('urgent');
+    el.ringSub.textContent = 'Ready';
+    el.ringProgress.style.strokeDashoffset = '0';
+    el.qPillMain.textContent = 'Question 0 of 0';
+    el.qPillSectionTag.textContent = '';
+    el.statCurrent.textContent = 'Question 0 of 0';
+    el.statCompleted.textContent = '0';
+    el.statRemainingQ.textContent = '0';
+    el.statTotal.textContent = '0';
+    el.statElapsed.textContent = '00:00';
+    el.statRemainingTime.textContent = '00:00';
+    el.progressFill.style.width = '0%';
+
+    el.statTestName.textContent = selectedTestKey ? TESTS[selectedTestKey].name : '—';
+    el.statSectionName.textContent = '—';
+    el.statSectionQ.textContent = '0 / 0';
+    el.statOverallProgress.textContent = '0 / 0';
+    el.statCompletedTest.textContent = '0';
+    el.statRemainingTest.textContent = '0';
+    el.statSectionRemaining.textContent = '00:00';
+    el.statQuestionTimer.textContent = '00';
+    el.statElapsedTest.textContent = '00:00';
+    el.statRemainingTotalTest.textContent = '00:00';
+    el.progressFillTest.style.width = '0%';
+    el.stsValue.textContent = '00:00';
+    el.stsBarFill.style.width = '100%';
+    el.stsSectionName.textContent = '—';
+
+    if(mode === MODE.TEST && selectedTestKey){ renderSectionCards(-1, null); }
+    updateStartAvailability();
+  }
+
+  function finishSession(){
+    stopDriver();
+    setStatus(STATE.COMPLETED);
+    el.pauseBtn.disabled = true;
+    el.startBtn.disabled = true;
+    playCompletionFanfare();
+    el.ringSub.textContent = 'Done';
+    el.ringTime.textContent = fmtTime(0, el.timeUnit.value === 'minutes');
+    launchConfetti();
+    document.getElementById('overlayTitle').textContent = 'Session Completed 🎉';
+    el.overlaySummary.textContent = 'You completed all ' + totalQuestions + ' questions. Nice pace.';
+    setTimeout(showOverlay, 350);
+  }
+
+  function finishTestSession(){
+    stopDriver();
+    setStatus(STATE.COMPLETED);
+    el.pauseBtn.disabled = true;
+    el.startBtn.disabled = true;
+    el.ringSub.textContent = 'Done';
+    launchConfetti();
+    document.getElementById('overlayTitle').textContent = '🎉 Mock Test Completed';
+    el.overlaySummary.textContent = 'Congratulations! You completed the ' + TESTS[selectedTestKey].name + ' mock across ' + sections.length + ' sections.';
+    renderSectionCards(sections.length, sections.map(function(){ return true; }));
+    setTimeout(showOverlay, 350);
+  }
+
+  function handleSectionEnd(){
+    transitioning = true;
+    stopDriver();
+    const isLast = sectionIndex >= sections.length - 1;
+    if(isLast){
+      playCompletionFanfare();
+      finishTestSession();
+      return;
+    }
+    playSectionCompleteBeeps();
+    showSectionToast();
+    renderSectionCards(sectionIndex, sections.map(function(_, i){ return i <= sectionIndex; }));
+    sectionTransitionTimeoutId = setTimeout(function(){
+      sectionTransitionTimeoutId = null;
+      if(!sessionActive) return;
+      sectionIndex += 1;
+      beginSection();
+      beginQuestion();
+      hideSectionToast();
+      transitioning = false;
+      if(state === STATE.RUNNING){ startDriver(); }
+    }, 2000);
+  }
+
+  /* ============================= TICK ============================= */
+  function tick(){
+    if(state !== STATE.RUNNING || transitioning) return;
+    const now = performance.now();
+    let remaining = remainingAtAnchor - (now - qAnchorTS);
+
+    if(mode === MODE.TEST){
+      const secRemaining = secRemainingAtAnchor - (now - secAnchorTS);
+      if(secRemaining <= 0){
+        renderStatic(Math.max(0, remaining), 0);
+        handleSectionEnd();
+        return;
+      }
+    }
+
+    if(remaining <= 0){
+      completedCount += 1;
+      completedOverall += 1;
+
+      if(mode === MODE.TEST && completedCount >= totalQuestions){
+        renderStatic(0, undefined);
+        handleSectionEnd();
+        return;
+      }
+
+      if(mode === MODE.MANUAL && completedCount >= totalQuestions){
+        renderStatic(0);
+        finishSession();
+        return;
+      }
+
+      currentIndex += 1;
+      beginQuestion();
+      remaining = remainingAtAnchor;
+    }
+
+    const secRemaining = Math.ceil(remaining / 1000);
+    if(secRemaining <= 4 && secRemaining >= 1 && secRemaining !== lastBeepSecond){
+      lastBeepSecond = secRemaining;
+      if(beepEnabled) playCountdownBeep();
+      pulseRingTime();
+    }
+
+    renderStatic(remaining);
+  }
+
+  function pulseRingTime(){
+    el.ringTime.classList.remove('beat');
+    void el.ringTime.offsetWidth;
+    el.ringTime.classList.add('beat');
+  }
+
+  /* ============================= RENDER ============================= */
+  function getSectionRemaining(secRemainingOverride){
+    const now = performance.now();
+    if(typeof secRemainingOverride === 'number'){
+      return secRemainingOverride;
+    } else if(state === STATE.RUNNING){
+      return Math.max(0, secRemainingAtAnchor - (now - secAnchorTS));
+    } else if(state === STATE.PAUSED){
+      return secRemainingAtAnchor;
+    } else if(sessionActive){
+      return sections[sectionIndex] ? sections[sectionIndex].ms : 0;
+    }
+    return 0;
+  }
+
+  function renderStatic(remainingOverride, secRemainingOverride){
+    const forceMinutes = el.timeUnit.value === 'minutes';
+    let remaining;
+    if(typeof remainingOverride === 'number'){
+      remaining = remainingOverride;
+    } else if(state === STATE.RUNNING){
+      remaining = Math.max(0, remainingAtAnchor - (performance.now() - qAnchorTS));
+    } else if(state === STATE.PAUSED){
+      remaining = remainingAtAnchor;
+    } else if(sessionActive){
+      remaining = questionDurationMs;
+    } else {
+      remaining = 0;
+    }
+
+    const qNumber = sessionActive ? Math.min(currentIndex + 1, totalQuestions) : 0;
+    const qTotal = totalQuestions;
+
+    /* When Test Mode is on and the per-question beep is switched off, the main
+       clock shows the section timer (with seconds) instead of the per-question
+       timer. The question still advances on the same schedule underneath —
+       only what the big clock displays changes. */
+    const showSectionInRing = mode === MODE.TEST && !beepEnabled && sessionActive;
+    let sectionRemaining = null;
+    if(mode === MODE.TEST){
+      sectionRemaining = getSectionRemaining(secRemainingOverride);
+    }
+
+    if(showSectionInRing){
+      el.ringTime.textContent = fmtClock(sectionRemaining);
+    } else {
+      el.ringTime.textContent = fmtTime(remaining, forceMinutes);
+    }
+    el.qPillMain.textContent = 'Question ' + qNumber + ' of ' + qTotal;
+    if(mode === MODE.TEST && sessionActive){
+      el.qPillSectionTag.textContent = sections[sectionIndex] ? sections[sectionIndex].name : '';
+    }
+
+    let urgent, fraction;
+    if(showSectionInRing){
+      const secTotalMs = sections[sectionIndex] ? sections[sectionIndex].ms : 1;
+      urgent = sectionRemaining <= 60000 && sectionRemaining > 0 && state === STATE.RUNNING;
+      fraction = secTotalMs > 0 ? (sectionRemaining / secTotalMs) : 0;
+    } else {
+      urgent = remaining <= 4000 && remaining > 0 && state === STATE.RUNNING;
+      fraction = questionDurationMs > 0 ? (remaining / questionDurationMs) : 0;
+    }
+    el.ringTime.classList.toggle('urgent', urgent);
+    el.ringProgress.classList.toggle('urgent', urgent);
+
+    fraction = Math.max(0, Math.min(1, fraction));
+    const offset = RING_CIRC * (1 - fraction);
+    el.ringProgress.style.strokeDashoffset = offset.toFixed(2);
+
+    el.ringSub.textContent = state === STATE.PAUSED ? 'Paused' : (sessionActive ? (showSectionInRing ? 'Section remaining' : 'Remaining') : 'Ready');
+
+    if(mode === MODE.MANUAL){
+      renderManualStats(remaining);
+    } else {
+      renderTestStats(remaining, sectionRemaining);
+    }
+  }
+
+  function renderManualStats(remaining){
+    const qNumber = sessionActive ? Math.min(currentIndex + 1, totalQuestions) : 0;
+    el.statCurrent.textContent = 'Question ' + qNumber + ' of ' + totalQuestions;
+    el.statCompleted.textContent = String(completedCount);
+    const remainingQuestions = sessionActive ? Math.max(0, totalQuestions - completedCount) : 0;
+    el.statRemainingQ.textContent = String(remainingQuestions);
+    el.statTotal.textContent = String(totalQuestions);
+
+    const elapsedQuestionsMs = completedCount * questionDurationMs;
+    const currentQElapsed = sessionActive && state !== STATE.COMPLETED ? Math.max(0, questionDurationMs - remaining) : 0;
+    const elapsedTotal = elapsedQuestionsMs + currentQElapsed;
+    const totalConfigured = totalQuestions * questionDurationMs;
+    const remainingTotal = Math.max(0, totalConfigured - elapsedTotal);
+
+    el.statElapsed.textContent = sessionActive ? fmtClock(elapsedTotal) : '00:00';
+    el.statRemainingTime.textContent = sessionActive ? fmtClock(remainingTotal) : '00:00';
+
+    const overallProgress = totalConfigured > 0 ? (elapsedTotal / totalConfigured) * 100 : 0;
+    el.progressFill.style.width = Math.max(0, Math.min(100, overallProgress)).toFixed(1) + '%';
+  }
+
+  function renderTestStats(remaining, secRemainingOverride){
+    if(!selectedTestKey){ return; }
+    const now = performance.now();
+    let secRemaining;
+    if(typeof secRemainingOverride === 'number'){
+      secRemaining = secRemainingOverride;
+    } else if(state === STATE.RUNNING){
+      secRemaining = Math.max(0, secRemainingAtAnchor - (now - secAnchorTS));
+    } else if(state === STATE.PAUSED){
+      secRemaining = secRemainingAtAnchor;
+    } else if(sessionActive){
+      secRemaining = sections[sectionIndex] ? sections[sectionIndex].ms : 0;
+    } else {
+      secRemaining = 0;
+    }
+
+    const sectionName = sessionActive && sections[sectionIndex] ? sections[sectionIndex].name : '—';
+    const qNumber = sessionActive ? Math.min(currentIndex + 1, totalQuestions) : 0;
+
+    el.statTestName.textContent = TESTS[selectedTestKey].name;
+    el.statSectionName.textContent = sectionName;
+    el.statSectionQ.textContent = qNumber + ' / ' + totalQuestions;
+
+    const overallCompleted = completedOverall;
+    el.statOverallProgress.textContent = overallCompleted + ' / ' + totalQuestionsAllSections;
+    el.statCompletedTest.textContent = String(overallCompleted);
+    el.statRemainingTest.textContent = String(Math.max(0, totalQuestionsAllSections - overallCompleted));
+
+    el.statSectionRemaining.textContent = fmtClock(secRemaining);
+    el.statQuestionTimer.textContent = fmtTime(remaining, el.timeUnit.value === 'minutes');
+
+    el.stsSectionName.textContent = sectionName;
+    el.stsValue.textContent = fmtClock(secRemaining);
+    const secTotal = sessionActive && sections[sectionIndex] ? sections[sectionIndex].ms : 1;
+    const secFraction = Math.max(0, Math.min(1, secRemaining / secTotal));
+    el.stsBarFill.style.width = (secFraction * 100).toFixed(1) + '%';
+    el.stsValue.classList.toggle('urgent', secRemaining <= 60000 && secRemaining > 0 && state === STATE.RUNNING);
+
+    /* elapsed / remaining across the whole test, based on section wall-clock durations */
+    let elapsedBeforeCurrent = 0;
+    for(let i = 0; i < sectionIndex; i++){ elapsedBeforeCurrent += sections[i] ? sections[i].ms : 0; }
+    const secTotalMs = sessionActive && sections[sectionIndex] ? sections[sectionIndex].ms : 0;
+    const currentSecElapsed = sessionActive && state !== STATE.COMPLETED ? Math.max(0, secTotalMs - secRemaining) : secTotalMs;
+    const elapsedTotal = sessionActive ? elapsedBeforeCurrent + currentSecElapsed : 0;
+    const totalConfigured = sections.reduce(function(a,s){ return a + s.ms; }, 0);
+    const remainingTotal = Math.max(0, totalConfigured - elapsedTotal);
+
+    el.statElapsedTest.textContent = sessionActive ? fmtClock(elapsedTotal) : '00:00';
+    el.statRemainingTotalTest.textContent = sessionActive ? fmtClock(remainingTotal) : '00:00';
+
+    const overallPct = totalConfigured > 0 ? (elapsedTotal / totalConfigured) * 100 : 0;
+    el.progressFillTest.style.width = Math.max(0, Math.min(100, overallPct)).toFixed(1) + '%';
+  }
+
+  /* ============================= OVERLAY / TOAST / CONFETTI ============================= */
+  function showOverlay(){ el.overlay.classList.add('show'); }
+  function hideOverlay(){ el.overlay.classList.remove('show'); }
+  function showSectionToast(){ el.sectionToast.classList.add('show'); }
+  function hideSectionToast(){ el.sectionToast.classList.remove('show'); }
+
+  const confettiColors = ['#D98E2B','#2F9E93','#B9741C','#4FD1C5','#F2A93B','#6B7480'];
+  let confettiPieces = [];
+  function launchConfetti(){
+    clearConfetti();
+    const count = 70;
+    for(let i=0;i<count;i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const left = Math.random() * 100;
+      const delay = Math.random() * 0.4;
+      const duration = 2.6 + Math.random() * 1.6;
+      const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+      const rotate = Math.random() > 0.5 ? '50%' : '2px';
+      piece.style.left = left + 'vw';
+      piece.style.background = color;
+      piece.style.borderRadius = rotate;
+      piece.style.animationDuration = duration + 's';
+      piece.style.animationDelay = delay + 's';
+      document.body.appendChild(piece);
+      confettiPieces.push(piece);
+      piece.addEventListener('animationend', function(){ piece.remove(); });
+    }
+  }
+  function clearConfetti(){
+    confettiPieces.forEach(function(p){ p.remove(); });
+    confettiPieces = [];
+  }
+
+  /* ============================= EVENTS ============================= */
+  el.startBtn.addEventListener('click', startSession);
+  el.pauseBtn.addEventListener('click', function(){
+    if(state === STATE.RUNNING) pauseSession();
+    else if(state === STATE.PAUSED) resumeSession();
+  });
+  el.resetBtn.addEventListener('click', resetSession);
+  el.overlayResetBtn.addEventListener('click', resetSession);
+
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden){ tick(); renderStatic(); }
+  });
+  window.addEventListener('focus', function(){ tick(); renderStatic(); });
+
+  /* initial paint */
+  resetSession();
+  initGoals();
+})();
+</script>
+</body>
+</html>
